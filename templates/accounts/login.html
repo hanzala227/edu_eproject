@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sign In • EduPredict AI Platform{% endblock %}
+
+{% block content %}
+<div class="w-full max-w-5xl bg-[#0D0E12] p-2.5 md:p-3.5 rounded-[44px] shadow-2xl border border-white/5 relative overflow-hidden">
+    
+    <!-- Subtle ambient glows (No muddy gradients) -->
+    <div class="absolute -top-32 -left-32 w-72 h-72 bg-indigo-600/15 rounded-full blur-3xl pointer-events-none"></div>
+    <div class="absolute -bottom-32 -right-32 w-72 h-72 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="flex flex-col lg:flex-row min-h-[620px] rounded-[36px] overflow-hidden">
+        
+        <!-- Left Side: Enterprise Obsidian Authority Panel -->
+        <div class="lg:w-5/12 bg-[#0D0E12] p-8 md:p-12 flex flex-col justify-between relative z-10 text-white border-b lg:border-b-0 lg:border-r border-white/5">
+            <!-- Brand Lockup -->
+            <div>
+                <div class="flex items-center space-x-3 mb-10">
+                    <div class="w-11 h-11 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-indigo-600/30">
+                        <i class="fa-solid fa-graduation-cap"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold tracking-tight text-white flex items-center gap-2">
+                            EduPredict <span class="text-[9px] uppercase tracking-wider bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-bold">ENTERPRISE</span>
+                        </h1>
+                        <p class="text-xs text-gray-500 font-medium">Predictive Retention & Analytics Engine</p>
+                    </div>
+                </div>
+
+                <div class="space-y-4 my-8">
+                    <h2 class="text-3xl md:text-4xl font-extrabold tracking-tight leading-tight text-white">
+                        AI-powered intelligence that <span class="text-indigo-400">retains</span> students.
+                    </h2>
+                    <p class="text-xs md:text-sm text-gray-400 leading-relaxed font-normal">
+                        Calibrated on 100,000+ Big Data records with live MongoDB Atlas synchronization, multi-factor dropout prediction, and course capacity planning.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Quick Demo Credentials Box -->
+            <div class="bg-[#14161E] p-4 md:p-5 rounded-3xl border border-white/5 space-y-3">
+                <div class="flex items-center justify-between text-xs font-semibold text-gray-300">
+                    <span class="flex items-center gap-2"><i class="fa-solid fa-bolt text-indigo-400"></i> One-Click Demo Access</span>
+                    <span class="text-[10px] text-gray-500 uppercase">Select Role</span>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <button type="button" onclick="fillCredentials('admin', 'admin123')" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 transition text-left flex items-center justify-between group">
+                        <span><strong>Admin</strong></span>
+                        <i class="fa-solid fa-arrow-right text-[10px] text-gray-500 group-hover:text-indigo-400 transition"></i>
+                    </button>
+                    <button type="button" onclick="fillCredentials('prof_ahmad', 'teacher123')" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 transition text-left flex items-center justify-between group">
+                        <span><strong>Faculty</strong></span>
+                        <i class="fa-solid fa-arrow-right text-[10px] text-gray-500 group-hover:text-indigo-400 transition"></i>
+                    </button>
+                    <button type="button" onclick="fillCredentials('analyst_sarah', 'analyst123')" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 transition text-left flex items-center justify-between group">
+                        <span><strong>Analyst</strong></span>
+                        <i class="fa-solid fa-arrow-right text-[10px] text-gray-500 group-hover:text-indigo-400 transition"></i>
+                    </button>
+                    <button type="button" onclick="fillCredentials('student_ali', 'student123')" class="px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-gray-200 transition text-left flex items-center justify-between group">
+                        <span><strong>Student</strong></span>
+                        <i class="fa-solid fa-arrow-right text-[10px] text-gray-500 group-hover:text-indigo-400 transition"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Footer indicator -->
+            <div class="pt-6 flex items-center justify-between text-xs text-gray-500 border-t border-white/5">
+                <span class="flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span> MongoDB Atlas Active
+                </span>
+                <span class="font-mono text-[11px]">v2.4 ML Ready</span>
+            </div>
+        </div>
+
+        <!-- Right Side: Crisp High-End Porcelain Form -->
+        <div class="lg:w-7/12 bg-[#F8FAFC] p-8 md:p-14 flex flex-col justify-center relative">
+            <div class="max-w-md w-full mx-auto space-y-7">
+                
+                <div>
+                    <h3 class="text-3xl font-extrabold text-[#0F172A] tracking-tight">Access Control</h3>
+                    <p class="text-xs md:text-sm text-gray-500 mt-1.5">Sign in to your institutional predictive analytics portal.</p>
+                </div>
+
+                <!-- Django Messages / Alerts -->
+                {% if messages %}
+                <div class="space-y-2">
+                    {% for message in messages %}
+                    <div class="p-3.5 rounded-2xl text-xs font-semibold flex items-center gap-3 {% if message.tags == 'error' %}bg-rose-50 text-rose-700 border border-rose-200{% elif message.tags == 'success' %}bg-emerald-50 text-emerald-700 border border-emerald-200{% else %}bg-indigo-50 text-indigo-700 border border-indigo-200{% endif %}">
+                        <i class="fa-solid {% if message.tags == 'error' %}fa-circle-exclamation{% else %}fa-circle-check{% endif %} text-sm"></i>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Form -->
+                <form method="POST" action="{% url 'login' %}" class="space-y-4" id="loginForm">
+                    {% csrf_token %}
+
+                    <div>
+                        <label for="username" class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-2">Username or Institutional ID</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                <i class="fa-regular fa-user"></i>
+                            </span>
+                            <input type="text" id="username" name="username" required
+                                placeholder="e.g. admin or STU-2023-0001"
+                                class="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition shadow-sm">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <label for="password" class="block text-xs font-bold text-gray-700 uppercase tracking-wider">Password</label>
+                            <a href="#" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition">Forgot password?</a>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+                                <i class="fa-solid fa-lock"></i>
+                            </span>
+                            <input type="password" id="password" name="password" required
+                                placeholder="••••••••••••"
+                                class="w-full pl-11 pr-12 py-3.5 bg-white border border-gray-200 rounded-2xl text-sm font-medium text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 transition shadow-sm">
+                            <button type="button" onclick="togglePassword()" class="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition">
+                                <i id="eyeIcon" class="fa-regular fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-1">
+                        <label class="flex items-center space-x-2.5 cursor-pointer">
+                            <input type="checkbox" checked class="w-4 h-4 rounded-lg text-indigo-600 border-gray-300 focus:ring-indigo-500 accent-indigo-600">
+                            <span class="text-xs font-medium text-gray-600">Keep me authenticated</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" id="submitBtn"
+                        class="w-full py-3.5 px-6 btn-primary-enterprise justify-center text-sm shadow-xl shadow-indigo-600/20">
+                        <span>Sign In to Dashboard</span>
+                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                    </button>
+                </form>
+
+                <p class="text-center text-xs text-gray-400 font-medium pt-2">
+                    Protected by EduPredict RBAC Protocol • Aptech eProject Edition
+                </p>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+    function togglePassword() {
+        const pwd = document.getElementById('password');
+        const icon = document.getElementById('eyeIcon');
+        if (pwd.type === 'password') {
+            pwd.type = 'text';
+            icon.classList.remove('fa-eye');
+            icon.classList.add('fa-eye-slash');
+        } else {
+            pwd.type = 'password';
+            icon.classList.remove('fa-eye-slash');
+            icon.classList.add('fa-eye');
+        }
+    }
+
+    function fillCredentials(user, pass) {
+        document.getElementById('username').value = user;
+        document.getElementById('password').value = pass;
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}EduPredict AI • Enterprise Predictive Platform{% endblock %}</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Central Global Design System CSS -->
+    <link rel="stylesheet" href="{% static 'css/global.css' %}">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Chart.js 4 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- React 18 & Babel for Seamless Single-Page Application (SPA) UX -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brandDark: '#08090C',
+                        sidebarDark: '#0D0E12',
+                        cardSurface: '#FFFFFF',
+                        brandIndigo: '#4F46E5',
+                        brandBlue: '#3B82F6',
+                        brandEmerald: '#10B981',
+                        brandRose: '#F43F5E',
+                    },
+                    borderRadius: {
+                        '3xl': '28px',
+                        '4xl': '36px',
+                        '5xl': '44px',
+                    }
+                }
+            }
+        }
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen lg:h-screen lg:overflow-hidden p-2 md:p-3.5 lg:p-4 flex items-center justify-center bg-[#08090C]">
+
+    {% block content %}
+    {% endblock %}
+
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

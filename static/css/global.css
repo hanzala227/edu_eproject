@@ -1,0 +1,287 @@
+/* ==============================================================================
+   EduPredict AI — Global Enterprise Design System (Linear / Stripe Grade)
+   ============================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+    /* Color Palette: Precision Enterprise (No Toy Colors) */
+    --bg-app: #08090C;
+    --bg-sidebar: #0D0E12;
+    --bg-surface: #F8FAFC;
+    --bg-card: #FFFFFF;
+    --bg-card-dark: #12141A;
+    --bg-card-elevated: #181A22;
+    
+    /* Brand Accents: Electric Indigo & Sapphire */
+    --primary: #4F46E5;
+    --primary-hover: #4338CA;
+    --primary-light: #EEF2FF;
+    --primary-glow: rgba(79, 70, 229, 0.25);
+    
+    --secondary: #0EA5E9;
+    --accent-emerald: #10B981;
+    --accent-emerald-soft: rgba(16, 185, 129, 0.12);
+    
+    /* Severity Tiers */
+    --critical: #F43F5E;
+    --critical-soft: rgba(244, 63, 94, 0.12);
+    --high: #F97316;
+    --high-soft: rgba(249, 115, 22, 0.12);
+    --medium: #FBBF24;
+    --medium-soft: rgba(251, 191, 36, 0.12);
+    --low: #10B981;
+    --low-soft: rgba(16, 185, 129, 0.12);
+    
+    /* Typography & Hairline Borders */
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+    --text-muted: #94A3B8;
+    --border-light: rgba(226, 232, 240, 0.8);
+    --border-dark: rgba(255, 255, 255, 0.07);
+    --border-dark-hover: rgba(255, 255, 255, 0.14);
+
+    /* Radiuses (Smooth Enterprise Curves) */
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+    --radius-xl: 28px;
+    --radius-2xl: 36px;
+    --radius-full: 9999px;
+
+    /* Elevation & Shadows */
+    --shadow-subtle: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
+    --shadow-floating: 0 20px 40px -15px rgba(0, 0, 0, 0.08);
+    --shadow-inner-hairline: inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
+}
+
+/* Base Reset */
+body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg-app);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Minimalist Scrollbars */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.3);
+    border-radius: var(--radius-full);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(148, 163, 184, 0.6);
+}
+
+/* ==============================================================================
+   REUSABLE ENTERPRISE COMPONENTS
+   ============================================================================== */
+
+/* 1. Cards */
+.card-enterprise {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-card);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.card-enterprise:hover {
+    box-shadow: var(--shadow-floating);
+    border-color: rgba(99, 102, 241, 0.2);
+}
+
+.card-dark-enterprise {
+    background-color: var(--bg-card-dark);
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-xl);
+    box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* 2. Buttons */
+.btn-primary-enterprise {
+    background: linear-gradient(135deg, #4F46E5 0%, #4338CA 100%);
+    color: #FFFFFF;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.65rem 1.25rem;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-primary-enterprise:hover {
+    background: linear-gradient(135deg, #4338CA 0%, #3730A3 100%);
+    box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45);
+    transform: translateY(-1px);
+}
+
+.btn-secondary-enterprise {
+    background: #FFFFFF;
+    color: #1E293B;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    padding: 0.6rem 1.1rem;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-subtle);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary-enterprise:hover {
+    background: #F8FAFC;
+    border-color: #CBD5E1;
+}
+
+.btn-danger-enterprise {
+    background: var(--critical-soft);
+    color: var(--critical);
+    font-weight: 600;
+    font-size: 0.75rem;
+    padding: 0.45rem 0.9rem;
+    border-radius: var(--radius-full);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-danger-enterprise:hover {
+    background: var(--critical);
+    color: #FFFFFF;
+}
+
+/* 3. Navigation Active Stadium Pill (Sleek Linear Grade) */
+.nav-pill-active {
+    background: linear-gradient(135deg, #4F46E5 0%, #3B82F6 100%);
+    color: #FFFFFF !important;
+    font-weight: 600;
+    border-radius: var(--radius-full);
+    box-shadow: 0 4px 15px rgba(79, 70, 229, 0.35);
+}
+
+.nav-pill-inactive {
+    color: #94A3B8;
+    font-weight: 500;
+    border-radius: var(--radius-lg);
+    transition: all 0.15s ease;
+}
+
+.nav-pill-inactive:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+/* 4. Form Inputs */
+.input-enterprise {
+    background-color: #FFFFFF;
+    border: 1px solid rgba(203, 213, 225, 0.8);
+    border-radius: var(--radius-md);
+    color: #0F172A;
+    font-size: 0.875rem;
+    padding: 0.75rem 1rem;
+    width: 100%;
+    box-shadow: inset 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+    transition: all 0.2s ease;
+}
+
+.input-enterprise:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+/* 5. Status Badges & Chips */
+.badge-tier-critical {
+    background-color: var(--critical-soft);
+    color: var(--critical);
+    border: 1px solid rgba(244, 63, 94, 0.25);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.badge-tier-high {
+    background-color: var(--high-soft);
+    color: var(--high);
+    border: 1px solid rgba(249, 115, 22, 0.25);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.badge-tier-medium {
+    background-color: var(--medium-soft);
+    color: #D97706;
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.badge-tier-low {
+    background-color: var(--accent-emerald-soft);
+    color: #059669;
+    border: 1px solid rgba(16, 185, 129, 0.25);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.badge-tier-anomaly {
+    background-color: rgba(147, 51, 234, 0.12);
+    color: #9333EA;
+    border: 1px solid rgba(147, 51, 234, 0.25);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    padding: 0.2rem 0.65rem;
+    border-radius: var(--radius-full);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

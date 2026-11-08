@@ -1,0 +1,84 @@
+{
+    "trained_at": "2026-11-09 03:53:11",
+    "training_records": 100000,
+    "models": {
+        "dropout_classifier": {
+            "accuracy": 0.8912,
+            "precision": 0.8171,
+            "recall": 0.614,
+            "f1": 0.7011,
+            "roc_auc": 0.9305,
+            "features": [
+                "department",
+                "gender",
+                "guardian_education",
+                "age",
+                "semester",
+                "financial_aid",
+                "high_school_gpa",
+                "previous_semester_gpa",
+                "cumulative_gpa",
+                "total_credit_hours",
+                "failed_courses_count",
+                "attendance_rate",
+                "consecutive_absences",
+                "quiz_average",
+                "assignment_average",
+                "midterm_exam_score",
+                "final_exam_score",
+                "lms_engagement_score",
+                "lms_weekly_logins",
+                "lms_forum_posts",
+                "lms_study_hours_per_week",
+                "lms_late_submissions",
+                "lms_downloads_count"
+            ]
+        },
+        "performance_regressor": {
+            "mae": 0.1136,
+            "rmse": 0.1496,
+            "r2_score": 0.9583,
+            "features": [
+                "department",
+                "gender",
+                "semester",
+                "cumulative_gpa",
+                "previous_semester_gpa",
+                "high_school_gpa",
+                "attendance_rate",
+                "quiz_average",
+                "assignment_average",
+                "midterm_exam_score",
+                "final_exam_score",
+                "failed_courses_count",
+                "lms_engagement_score",
+                "lms_study_hours_per_week"
+            ]
+        },
+        "anomaly_detector": {
+            "algorithm": "IsolationForest",
+            "contamination": 0.05,
+            "features": [
+                "cumulative_gpa",
+                "attendance_rate",
+                "consecutive_absences",
+                "lms_engagement_score",
+                "lms_weekly_logins",
+                "lms_late_submissions"
+            ]
+        },
+        "course_demand_forecaster": {
+            "mae": 9.6,
+            "r2_score": 0.8677,
+            "features": [
+                "term_sequence",
+                "target_semester",
+                "pass_rate",
+                "drop_rate",
+                "average_gpa",
+                "course_code",
+                "department"
+            ]
+        }
+    }
+}

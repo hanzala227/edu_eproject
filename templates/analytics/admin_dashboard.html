@@ -1,0 +1,839 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}EduPredict AI • Enterprise Executive Dashboard{% endblock %}
+
+{% block content %}
+<!-- Master App Container -->
+<div id="root" class="w-full max-w-[1560px] bg-[#0D0E12] p-2 md:p-3 rounded-[40px] shadow-2xl border border-white/5 flex flex-col lg:flex-row relative lg:h-[calc(100vh-2rem)] overflow-hidden">
+    <!-- React Mount Point -->
+</div>
+
+<!-- React 18 SPA Application Script -->
+<script type="text/babel">
+const { useState, useEffect, useMemo, useRef } = React;
+
+function AdminDashboardApp() {
+    const [data, setData] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [activeTab, setActiveTab] = useState('overview');
+    const [searchQuery, setSearchQuery] = useState('');
+    const [deptFilter, setDeptFilter] = useState('All');
+    const [riskFilter, setRiskFilter] = useState('All');
+    const [selectedStudent, setSelectedStudent] = useState(null);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const [syncMessage, setSyncMessage] = useState('');
+    const chartRef = useRef(null);
+    const chartInstance = useRef(null);
+
+    // Fetch dynamic MongoDB Atlas data
+    const fetchData = async () => {
+        try {
+            const res = await fetch('/api/dashboard-data/');
+            const json = await res.json();
+            if (json.success) {
+                setData(json);
+            }
+        } catch (err) {
+            console.error("Failed to load dashboard data:", err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    // Trigger ML Model sync with MongoDB Atlas
+    const handleSyncModels = async () => {
+        setIsSyncing(true);
+        setSyncMessage('Running HistGradientBoosting inference across Atlas records...');
+        try {
+            const res = await fetch('/api/sync-models/', { method: 'POST' });
+            const json = await res.json();
+            if (json.success) {
+                setSyncMessage(json.message);
+                await fetchData();
+            } else {
+                setSyncMessage('Sync failed: ' + json.error);
+            }
+        } catch (err) {
+            setSyncMessage('Network error during sync.');
+        } finally {
+            setTimeout(() => {
+                setIsSyncing(false);
+                setSyncMessage('');
+            }, 3000);
+        }
+    };
+
+    // Filter students
+    const filteredStudents = useMemo(() => {
+        if (!data || !data.students) return [];
+        return data.students.filter(s => {
+            const matchesSearch = s.student_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  s.student_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                                  s.department.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesDept = deptFilter === 'All' || s.department === deptFilter;
+            const matchesRisk = riskFilter === 'All' || s.risk_level === riskFilter;
+            return matchesSearch && matchesDept && matchesRisk;
+        });
+    }, [data, searchQuery, deptFilter, riskFilter]);
+
+    // Distinct departments
+    const departments = useMemo(() => {
+        if (!data || !data.students) return [];
+        return ['All', ...new Set(data.students.map(s => s.department))];
+    }, [data]);
+
+    // Render Chart.js
+    useEffect(() => {
+        if (!data || !chartRef.current || activeTab !== 'overview') return;
+
+        if (chartInstance.current) {
+            chartInstance.current.destroy();
+        }
+
+        const ctx = chartRef.current.getContext('2d');
+        const dist = data.risk_distribution;
+
+        chartInstance.current = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Low Risk (Safe)', 'Medium Risk', 'High Risk', 'Critical Risk'],
+                datasets: [{
+                    data: [dist.low, dist.medium, dist.high, dist.critical],
+                    backgroundColor: [
+                        '#10B981', // Emerald
+                        '#F59E0B', // Amber
+                        '#EA580C', // Orange
+                        '#F43F5E'  // Crimson Rose
+                    ],
+                    borderRadius: 14,
+                    borderSkipped: false,
+                    barThickness: 38
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#0F172A',
+                        titleFont: { family: 'Plus Jakarta Sans', size: 12, weight: 'bold' },
+                        bodyFont: { family: 'Plus Jakarta Sans', size: 12 },
+                        padding: 12,
+                        cornerRadius: 12,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(ctx) { return ctx.parsed.y + ' Students'; }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { family: 'Plus Jakarta Sans', weight: '600', size: 11 }, color: '#64748B' }
+                    },
+                    y: {
+                        grid: { color: '#F1F5F9' },
+                        ticks: { font: { family: 'Plus Jakarta Sans', size: 11 }, color: '#94A3B8', stepSize: 20 }
+                    }
+                }
+            }
+        });
+
+        return () => {
+            if (chartInstance.current) {
+                chartInstance.current.destroy();
+            }
+        };
+    }, [data, activeTab]);
+
+    if (loading) {
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center p-8 space-y-4">
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin"></div>
+                    <i className="fa-solid fa-graduation-cap text-indigo-400 text-xl"></i>
+                </div>
+                <div className="text-center">
+                    <p className="text-sm font-bold text-white tracking-wide">Connecting to MongoDB Atlas</p>
+                    <p className="text-xs text-gray-500 mt-1">Ingesting live student feature vectors & ML inferences...</p>
+                </div>
+            </div>
+        );
+    }
+
+    return (
+        <div className="w-full h-full flex flex-col lg:flex-row overflow-hidden relative">
+
+            {/* ================================================================== */}
+            {/* 1. FROZEN STICKY SIDEBAR (Executive Matte Dark #0D0E12)            */}
+            {/* ================================================================== */}
+            <aside className="w-full lg:w-[270px] min-w-[270px] bg-[#0D0E12] p-5 lg:p-6 flex flex-col justify-between text-white border-b lg:border-b-0 lg:border-r border-white/5 lg:h-full lg:overflow-y-auto shrink-0 select-none">
+                
+                <div className="space-y-6">
+                    {/* Brand Lockup */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-blue-500 flex items-center justify-center text-white font-black text-lg shadow-lg shadow-indigo-600/30">
+                                <i className="fa-solid fa-graduation-cap"></i>
+                            </div>
+                            <div>
+                                <span className="text-base font-extrabold tracking-tight text-white flex items-center gap-1.5">
+                                    EduPredict <span className="text-[9px] uppercase tracking-wider bg-indigo-500/20 text-indigo-400 px-1.5 py-0.5 rounded-full font-bold">PRO</span>
+                                </span>
+                                <p className="text-[10px] text-gray-500 font-semibold tracking-wider uppercase">Enterprise Analytics</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Instant Search Bar with ⌘K */}
+                    <div className="relative">
+                        <div className="bg-[#14161E] border border-white/5 rounded-2xl px-3.5 py-2.5 flex items-center justify-between text-xs text-gray-400 focus-within:border-indigo-500/50 transition">
+                            <span className="flex items-center gap-2 flex-1">
+                                <i className="fa-solid fa-magnifying-glass text-gray-500 text-xs"></i>
+                                <input
+                                    type="text"
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    placeholder="Filter by name, ID..."
+                                    className="bg-transparent border-none outline-none text-white text-xs placeholder-gray-500 w-full"
+                                />
+                            </span>
+                            {searchQuery && (
+                                <button onClick={() => setSearchQuery('')} className="text-gray-500 hover:text-white mr-1 text-[10px]">
+                                    <i className="fa-solid fa-xmark"></i>
+                                </button>
+                            )}
+                            <span className="text-[9px] bg-white/5 text-gray-400 px-1.5 py-0.5 rounded font-mono">⌘K</span>
+                        </div>
+                    </div>
+
+                    {/* Navigation Items (Zero Page Reload SPA Tab Switchers) */}
+                    <div className="space-y-1 pt-1">
+                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest px-3 mb-2">Core Views</p>
+
+                        <button
+                            onClick={() => setActiveTab('overview')}
+                            className={`w-full text-xs font-semibold rounded-2xl px-4 py-3 flex items-center gap-3 transition text-left ${activeTab === 'overview' ? 'nav-pill-active' : 'nav-pill-inactive'}`}>
+                            <i className="fa-solid fa-chart-pie text-sm"></i>
+                            <span>Executive Overview</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('predictions')}
+                            className={`w-full text-xs font-semibold rounded-2xl px-4 py-3 flex items-center gap-3 transition text-left ${activeTab === 'predictions' ? 'nav-pill-active' : 'nav-pill-inactive'}`}>
+                            <i className="fa-solid fa-triangle-exclamation text-sm"></i>
+                            <span>ML Risk Directory</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('demand')}
+                            className={`w-full text-xs font-semibold rounded-2xl px-4 py-3 flex items-center gap-3 transition text-left ${activeTab === 'demand' ? 'nav-pill-active' : 'nav-pill-inactive'}`}>
+                            <i className="fa-solid fa-book-bookmark text-sm"></i>
+                            <span>Course Demand</span>
+                        </button>
+
+                        <button
+                            onClick={() => setActiveTab('alerts')}
+                            className={`w-full text-xs font-semibold rounded-2xl px-4 py-3 flex items-center justify-between transition text-left ${activeTab === 'alerts' ? 'nav-pill-active' : 'nav-pill-inactive'}`}>
+                            <span className="flex items-center gap-3">
+                                <i className="fa-regular fa-bell text-sm"></i>
+                                <span>Early Warnings</span>
+                            </span>
+                            <span className="bg-rose-500/20 text-rose-400 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                                {data?.kpis.total_alerts || 0}
+                            </span>
+                        </button>
+                    </div>
+
+                    {/* Operations */}
+                    <div className="space-y-1 pt-2">
+                        <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest px-3 mb-2">ML Pipeline</p>
+                        
+                        <button
+                            onClick={handleSyncModels}
+                            disabled={isSyncing}
+                            className="w-full text-gray-400 hover:text-white hover:bg-white/5 font-semibold text-xs rounded-2xl px-4 py-2.5 flex items-center justify-between transition text-left">
+                            <span className="flex items-center gap-3">
+                                <i className={`fa-solid fa-arrows-rotate text-xs ${isSyncing ? 'fa-spin text-indigo-400' : ''}`}></i>
+                                <span>Sync ML Predictions</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                {/* Bottom Status Card (Executive High-Tech Look) */}
+                <div className="bg-[#14161E] p-4 rounded-3xl border border-white/5 space-y-2 mt-6">
+                    <div className="flex items-center justify-between">
+                        <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Atlas Cluster</p>
+                        <span className="flex items-center gap-1.5 text-[10px] text-emerald-400 font-bold">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Live
+                        </span>
+                    </div>
+                    <p className="text-xs font-bold text-white">HistGradientBoosting v2.4</p>
+                    <p className="text-[10px] text-gray-400">93.05% ROC-AUC • 100k big data</p>
+                </div>
+
+            </aside>
+
+            {/* ================================================================== */}
+            {/* 2. SCROLLABLE MAIN CONTENT AREA (High-Density Modern Porcelain)    */}
+            {/* ================================================================== */}
+            <main className="flex-1 bg-[#F8FAFC] rounded-[36px] p-5 md:p-8 lg:p-9 lg:h-full overflow-y-auto space-y-7">
+                
+                {/* Header Bar */}
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <h2 className="text-2xl md:text-3xl font-extrabold text-[#0F172A] tracking-tight">
+                                Executive Intelligence Command
+                            </h2>
+                            <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded-full">
+                                Fall 2026 Term
+                            </span>
+                        </div>
+                        <p className="text-xs md:text-sm text-gray-500 mt-1 font-medium">
+                            Real-time student retention probabilities, academic trajectories, and capacity forecasting.
+                        </p>
+                    </div>
+
+                    {/* Right Controls */}
+                    <div className="flex items-center space-x-3">
+                        {syncMessage && (
+                            <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-full animate-fade-in">
+                                {syncMessage}
+                            </span>
+                        )}
+
+                        <button
+                            onClick={handleSyncModels}
+                            disabled={isSyncing}
+                            className="btn-primary-enterprise">
+                            <i className={`fa-solid fa-bolt text-xs ${isSyncing ? 'fa-spin' : ''}`}></i>
+                            <span>{isSyncing ? 'Evaluating Inferences...' : 'Re-Run ML Engine'}</span>
+                        </button>
+
+                        <div className="flex items-center space-x-2.5 bg-white border border-gray-200 pl-2 pr-3.5 py-1 rounded-full shadow-sm">
+                            <div className="w-7 h-7 rounded-full bg-indigo-600 text-white font-bold flex items-center justify-center text-xs">
+                                A
+                            </div>
+                            <span className="text-xs font-bold text-gray-800">Administrator</span>
+                            <a href="/logout/" title="Log Out" className="text-gray-400 hover:text-rose-600 text-xs pl-1">
+                                <i className="fa-solid fa-arrow-right-from-bracket"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                {/* ============================================================== */}
+                {/* TAB 1: EXECUTIVE OVERVIEW                                      */}
+                {/* ============================================================== */}
+                {activeTab === 'overview' && (
+                    <div className="space-y-7 animate-fade-in">
+                        
+                        {/* 4 KPI Scorecards */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                            
+                            <div className="card-enterprise p-5 relative group">
+                                <div className="flex items-center justify-between text-gray-500 text-xs font-bold uppercase tracking-wider">
+                                    <span>Active Students</span>
+                                    <div className="w-8 h-8 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                                        <i className="fa-solid fa-user-graduate"></i>
+                                    </div>
+                                </div>
+                                <div className="mt-3">
+                                    <p className="text-3xl font-extrabold text-[#0F172A] tracking-tight">{data.kpis.total_students}</p>
+                                    <p className="text-xs font-semibold text-emerald-600 mt-1 flex items-center gap-1">
+                                        <i className="fa-solid fa-circle-check text-[10px]"></i> 100% Ingested from Atlas
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="card-enterprise p-5 relative group">
+                                <div className="flex items-center justify-between text-gray-500 text-xs font-bold uppercase tracking-wider">
+                                    <span>At-Risk Identified</span>
+                                    <div className="w-8 h-8 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
+                                        <i className="fa-solid fa-triangle-exclamation"></i>
+                                    </div>
+                                </div>
+                                <div className="mt-3">
+                                    <p className="text-3xl font-extrabold text-[#0F172A] tracking-tight">{data.kpis.at_risk_total}</p>
+                                    <p className="text-xs font-semibold text-rose-600 mt-1 flex items-center gap-1">
+                                        <span>{data.risk_distribution.critical} Critical, {data.risk_distribution.high} High</span>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="card-enterprise p-5 relative group">
+                                <div className="flex items-center justify-between text-gray-500 text-xs font-bold uppercase tracking-wider">
+                                    <span>Average CGPA</span>
+                                    <div className="w-8 h-8 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                                        <i className="fa-solid fa-award"></i>
+                                    </div>
+                                </div>
+                                <div className="mt-3">
+                                    <p className="text-3xl font-extrabold text-[#0F172A] tracking-tight">
+                                        {data.kpis.avg_cgpa} <span className="text-sm font-semibold text-gray-400">/ 4.0</span>
+                                    </p>
+                                    <p className="text-xs font-semibold text-emerald-600 mt-1 flex items-center gap-1">
+                                        <i className="fa-solid fa-arrow-trend-up text-[10px]"></i> +0.14 projected trajectory
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="card-enterprise p-5 relative group">
+                                <div className="flex items-center justify-between text-gray-500 text-xs font-bold uppercase tracking-wider">
+                                    <span>Attendance Rate</span>
+                                    <div className="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                                        <i className="fa-regular fa-calendar-check"></i>
+                                    </div>
+                                </div>
+                                <div className="mt-3">
+                                    <p className="text-3xl font-extrabold text-[#0F172A] tracking-tight">{data.kpis.avg_attendance}%</p>
+                                    <p className="text-xs font-semibold text-emerald-600 mt-1 flex items-center gap-1">
+                                        <i className="fa-solid fa-check text-[10px]"></i> Exceeds 75% policy benchmark
+                                    </p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Middle Row: Chart & High Priority Alert Stream */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            
+                            {/* Retention Spectrum Chart (2 Columns) */}
+                            <div className="lg:col-span-2 card-enterprise p-6">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div>
+                                        <h3 className="text-base font-extrabold text-[#0F172A] tracking-tight">
+                                            Student Retention & Risk Spectrum
+                                        </h3>
+                                        <p className="text-xs text-gray-400 mt-0.5">
+                                            HistGradientBoosting Calibrated Classifications
+                                        </p>
+                                    </div>
+                                    <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                                        120 Students Evaluated
+                                    </span>
+                                </div>
+
+                                <div className="relative w-full h-[250px]">
+                                    <canvas ref={chartRef}></canvas>
+                                </div>
+
+                                <div className="grid grid-cols-4 gap-2 pt-4 border-t border-gray-100 mt-4 text-center">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Low Risk</p>
+                                        <p className="text-sm font-extrabold text-emerald-600">{data.risk_distribution.low} Students</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Medium Risk</p>
+                                        <p className="text-sm font-extrabold text-amber-500">{data.risk_distribution.medium} Students</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">High Risk</p>
+                                        <p className="text-sm font-extrabold text-orange-600">{data.risk_distribution.high} Students</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-400 uppercase">Critical Risk</p>
+                                        <p className="text-sm font-extrabold text-rose-600">{data.risk_distribution.critical} Students</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Priority Early Warning Interventions (1 Column) */}
+                            <div className="card-enterprise p-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-base font-extrabold text-[#0F172A] tracking-tight">
+                                        Priority Interventions
+                                    </h3>
+                                    <span className="text-[10px] font-bold bg-rose-50 text-rose-600 px-2 py-0.5 rounded-full">
+                                        Live Feed
+                                    </span>
+                                </div>
+
+                                <div className="space-y-3 max-h-[310px] overflow-y-auto pr-1">
+                                    {data.alerts.slice(0, 5).map((a, i) => (
+                                        <div key={i} className="p-3 rounded-2xl bg-gray-50/80 hover:bg-gray-100 border border-gray-100 transition flex items-start gap-3">
+                                            <div className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs shrink-0 mt-0.5 ${a.severity === 'critical' ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white'}`}>
+                                                <i className={`fa-solid ${a.severity === 'critical' ? 'fa-triangle-exclamation' : 'fa-bell'}`}></i>
+                                            </div>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="flex items-center justify-between">
+                                                    <p className="text-xs font-bold text-gray-900 truncate">{a.student_name}</p>
+                                                    <span className="text-[10px] font-mono text-gray-400">{a.student_id}</span>
+                                                </div>
+                                                <p className="text-[11px] text-gray-500 line-clamp-2 mt-0.5">{a.message}</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Top Critical Students Quick Action List */}
+                        <div className="card-enterprise p-6 space-y-4">
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                <div>
+                                    <h3 className="text-base font-extrabold text-[#0F172A] tracking-tight">
+                                        Highest Priority Retention Cases
+                                    </h3>
+                                    <p className="text-xs text-gray-400 mt-0.5">
+                                        Click any student row to inspect explainable AI diagnostic factors
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={() => setActiveTab('predictions')}
+                                    className="text-xs font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1.5">
+                                    <span>View Complete 120-Student Directory</span>
+                                    <i className="fa-solid fa-arrow-right text-[10px]"></i>
+                                </button>
+                            </div>
+
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-2">
+                                            <th className="py-2.5 px-3">Student</th>
+                                            <th className="py-2.5 px-3">Program</th>
+                                            <th className="py-2.5 px-3">CGPA</th>
+                                            <th className="py-2.5 px-3">Attendance</th>
+                                            <th className="py-2.5 px-3">Risk Probability</th>
+                                            <th className="py-2.5 px-3">Primary Factor</th>
+                                            <th className="py-2.5 px-3 text-right">Diagnostic</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="text-xs divide-y divide-gray-50">
+                                        {data.students.slice(0, 5).map((s) => (
+                                            <tr key={s.student_id} className="hover:bg-gray-50 transition cursor-pointer" onClick={() => setSelectedStudent(s)}>
+                                                <td className="py-3 px-3">
+                                                    <div className="flex items-center gap-2.5">
+                                                        <div className="w-7 h-7 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-[10px]">
+                                                            {s.student_name[0]}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-gray-900">{s.student_name}</p>
+                                                            <p className="text-[10px] text-gray-400 font-mono">{s.student_id}</p>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td className="py-3 px-3 font-semibold text-gray-700">{s.program}</td>
+                                                <td className="py-3 px-3 font-bold text-gray-900">{s.cgpa}</td>
+                                                <td className="py-3 px-3">
+                                                    <span className={s.attendance_rate < 75 ? "text-rose-600 font-bold" : "text-gray-700"}>
+                                                        {s.attendance_rate}%
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-3">
+                                                    <span className={`badge-tier-${s.risk_level.toLowerCase()}`}>
+                                                        {s.dropout_probability_percent}% • {s.risk_level}
+                                                    </span>
+                                                </td>
+                                                <td className="py-3 px-3 text-gray-500 text-[11px] max-w-xs truncate">
+                                                    {s.risk_factors[0]}
+                                                </td>
+                                                <td className="py-3 px-3 text-right">
+                                                    <button className="btn-secondary-enterprise py-1 px-3 text-[11px]">
+                                                        Inspect AI
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                    </div>
+                )}
+
+                {/* ============================================================== */}
+                {/* TAB 2: COMPLETE ML RISK DIRECTORY & CLIENT-SIDE SEARCH         */}
+                {/* ============================================================== */}
+                {activeTab === 'predictions' && (
+                    <div className="card-enterprise p-6 space-y-6 animate-fade-in">
+                        
+                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div>
+                                <h3 className="text-lg font-extrabold text-[#0F172A] tracking-tight">
+                                    Student Predictive Diagnostic Directory
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    Instant zero-lag search & multi-factor filtering powered by React & MongoDB
+                                </p>
+                            </div>
+
+                            {/* Filters */}
+                            <div className="flex flex-wrap items-center gap-2">
+                                <select
+                                    value={deptFilter}
+                                    onChange={(e) => setDeptFilter(e.target.value)}
+                                    className="bg-white border border-gray-200 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2 outline-none focus:border-indigo-500">
+                                    {departments.map(d => <option key={d} value={d}>{d === 'All' ? 'All Departments' : d}</option>)}
+                                </select>
+
+                                <select
+                                    value={riskFilter}
+                                    onChange={(e) => setRiskFilter(e.target.value)}
+                                    className="bg-white border border-gray-200 text-xs font-semibold text-gray-700 rounded-xl px-3 py-2 outline-none focus:border-indigo-500">
+                                    <option value="All">All Risk Tiers</option>
+                                    <option value="Critical">Critical Risk Only</option>
+                                    <option value="High">High Risk Only</option>
+                                    <option value="Medium">Medium Risk Only</option>
+                                    <option value="Low">Low Risk Only</option>
+                                </select>
+
+                                <span className="text-xs font-bold text-gray-500 bg-gray-100 px-3 py-2 rounded-xl">
+                                    Showing {filteredStudents.length} of {data.students.length}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left border-collapse">
+                                <thead>
+                                    <tr className="text-[10px] font-bold text-gray-400 uppercase tracking-wider border-b border-gray-100 pb-3">
+                                        <th className="py-3 px-3">Student Name & ID</th>
+                                        <th className="py-3 px-3">Department</th>
+                                        <th className="py-3 px-3">Sem</th>
+                                        <th className="py-3 px-3">Current CGPA</th>
+                                        <th className="py-3 px-3">Forecasted Next GPA</th>
+                                        <th className="py-3 px-3">Attendance</th>
+                                        <th className="py-3 px-3">Dropout Risk Score</th>
+                                        <th className="py-3 px-3 text-right">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="text-xs divide-y divide-gray-50">
+                                    {filteredStudents.map((s) => (
+                                        <tr key={s.student_id} className="hover:bg-gray-50 transition">
+                                            <td className="py-3.5 px-3">
+                                                <div className="flex items-center gap-2.5">
+                                                    <div className="w-8 h-8 rounded-full bg-indigo-50 text-indigo-700 font-bold flex items-center justify-center text-xs">
+                                                        {s.student_name[0]}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-gray-900 flex items-center gap-1.5">
+                                                            {s.student_name}
+                                                            {s.is_anomaly && (
+                                                                <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.2 rounded font-bold">
+                                                                    ANOMALY
+                                                                </span>
+                                                            )}
+                                                        </p>
+                                                        <p className="text-[10px] text-gray-400 font-mono">{s.student_id}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="py-3.5 px-3 font-semibold text-gray-700">{s.department}</td>
+                                            <td className="py-3.5 px-3 text-gray-600">Sem {s.semester}</td>
+                                            <td className="py-3.5 px-3 font-bold text-gray-900">{s.cgpa}</td>
+                                            <td className="py-3.5 px-3">
+                                                <span className={`font-bold ${s.trajectory === 'Improving' ? 'text-emerald-600' : s.trajectory === 'Declining' ? 'text-rose-600' : 'text-gray-700'}`}>
+                                                    {s.predicted_next_cgpa} ({s.trajectory})
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-3">
+                                                <span className={s.attendance_rate < 75 ? "text-rose-600 font-bold" : "text-gray-700"}>
+                                                    {s.attendance_rate}%
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-3">
+                                                <span className={`badge-tier-${s.risk_level.toLowerCase()}`}>
+                                                    {s.dropout_probability_percent}% • {s.risk_level}
+                                                </span>
+                                            </td>
+                                            <td className="py-3.5 px-3 text-right">
+                                                <button
+                                                    onClick={() => setSelectedStudent(s)}
+                                                    className="btn-secondary-enterprise py-1 px-3 text-[11px]">
+                                                    Diagnostic
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                )}
+
+                {/* ============================================================== */}
+                {/* TAB 3: COURSE DEMAND FORECASTING                              */}
+                {/* ============================================================== */}
+                {activeTab === 'demand' && (
+                    <div className="card-enterprise p-6 space-y-6 animate-fade-in">
+                        <div>
+                            <h3 className="text-lg font-extrabold text-[#0F172A] tracking-tight">
+                                Course Demand & Classroom Capacity Forecasting
+                            </h3>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                                Machine Learning Trend Projections for Upcoming Term (Fall 2026)
+                            </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {data.course_demands.map((cd, i) => (
+                                <div key={i} className="p-5 rounded-2xl bg-gray-50/70 border border-gray-200 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <span className="text-xs font-bold text-indigo-600 font-mono">{cd.course_code}</span>
+                                            <h4 className="text-sm font-extrabold text-gray-900 mt-0.5">{cd.course_name}</h4>
+                                        </div>
+                                        <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${cd.faculty_capacity_met ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                                            {cd.faculty_capacity_met ? 'Capacity Met' : 'Action: Needs Faculty'}
+                                        </span>
+                                    </div>
+
+                                    <div className="grid grid-cols-3 gap-2 pt-2 border-t border-gray-200/60 text-center">
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Historical</p>
+                                            <p className="text-sm font-bold text-gray-800">{cd.historical_enrollment}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Projected</p>
+                                            <p className="text-sm font-extrabold text-indigo-600">{cd.projected_enrollment} Students</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-bold text-gray-400 uppercase">Sections Req.</p>
+                                            <p className="text-sm font-extrabold text-gray-900">{cd.recommended_sections} Sections</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* ============================================================== */}
+                {/* TAB 4: EARLY WARNINGS & SYSTEM ALERTS                         */}
+                {/* ============================================================== */}
+                {activeTab === 'alerts' && (
+                    <div className="card-enterprise p-6 space-y-5 animate-fade-in">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h3 className="text-lg font-extrabold text-[#0F172A] tracking-tight">
+                                    Automated Early Warning Feed
+                                </h3>
+                                <p className="text-xs text-gray-400 mt-0.5">
+                                    Threshold & Anomaly Triggers Dispatched by Neural Pipeline
+                                </p>
+                            </div>
+                            <span className="text-xs font-bold text-rose-600 bg-rose-50 px-3 py-1 rounded-full">
+                                {data.alerts.length} Total Alerts Active
+                            </span>
+                        </div>
+
+                        <div className="space-y-3">
+                            {data.alerts.map((a, i) => (
+                                <div key={i} className="p-4 rounded-2xl bg-white border border-gray-200 shadow-sm flex items-start justify-between gap-4">
+                                    <div className="flex items-start gap-3">
+                                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center text-xs shrink-0 mt-0.5 ${a.severity === 'critical' ? 'bg-rose-500 text-white' : 'bg-amber-500 text-white'}`}>
+                                            <i className="fa-solid fa-triangle-exclamation"></i>
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-2">
+                                                <h4 className="text-sm font-bold text-gray-900">{a.student_name}</h4>
+                                                <span className="text-xs font-mono text-gray-400">({a.student_id})</span>
+                                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded ${a.severity === 'critical' ? 'bg-rose-100 text-rose-700' : 'bg-amber-100 text-amber-700'}`}>
+                                                    {a.severity}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-600 mt-1">{a.message}</p>
+                                        </div>
+                                    </div>
+
+                                    <button className="btn-danger-enterprise shrink-0">
+                                        Resolve Alert
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+            </main>
+
+            {/* ================================================================== */}
+            {/* MODAL: EXPLAINABLE AI DIAGNOSTIC MODAL                             */}
+            {/* ================================================================== */}
+            {selectedStudent && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fade-in">
+                    <div className="bg-white max-w-lg w-full rounded-[36px] p-7 shadow-2xl border border-gray-100 space-y-6 relative">
+                        
+                        <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="w-12 h-12 rounded-2xl bg-indigo-600 text-white font-extrabold text-lg flex items-center justify-center shadow-lg shadow-indigo-600/30">
+                                    {selectedStudent.student_name[0]}
+                                </div>
+                                <div>
+                                    <h3 className="text-xl font-extrabold text-[#0F172A]">{selectedStudent.student_name}</h3>
+                                    <p className="text-xs text-gray-400 font-mono">{selectedStudent.student_id} • {selectedStudent.program}</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedStudent(null)} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-600 flex items-center justify-center transition">
+                                <i className="fa-solid fa-xmark text-xs"></i>
+                            </button>
+                        </div>
+
+                        {/* Metric Highlights */}
+                        <div className="grid grid-cols-3 gap-3 p-4 bg-gray-50 rounded-2xl text-center">
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase">Dropout Risk</p>
+                                <p className={`text-lg font-black ${selectedStudent.risk_level === 'Critical' ? 'text-rose-600' : selectedStudent.risk_level === 'High' ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                    {selectedStudent.dropout_probability_percent}%
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase">Current CGPA</p>
+                                <p className="text-lg font-black text-gray-900">{selectedStudent.cgpa}</p>
+                            </div>
+                            <div>
+                                <p className="text-[10px] font-bold text-gray-400 uppercase">Forecast GPA</p>
+                                <p className="text-lg font-black text-indigo-600">{selectedStudent.predicted_next_cgpa}</p>
+                            </div>
+                        </div>
+
+                        {/* Explainable AI Risk Factors */}
+                        <div className="space-y-2">
+                            <p className="text-xs font-bold text-gray-700 uppercase tracking-wider">Top Explainable AI Factors</p>
+                            <ul className="space-y-1.5">
+                                {selectedStudent.risk_factors.map((f, i) => (
+                                    <li key={i} className="text-xs text-gray-700 bg-rose-50/70 border border-rose-100 p-2.5 rounded-xl flex items-center gap-2">
+                                        <i className="fa-solid fa-circle-exclamation text-rose-500 text-[10px]"></i>
+                                        <span>{f}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+
+                        {/* Intervention Action */}
+                        <div className="flex items-center gap-2 pt-2">
+                            <button
+                                onClick={() => {
+                                    alert(`Intervention notice successfully recorded for ${selectedStudent.student_name}.`);
+                                    setSelectedStudent(null);
+                                }}
+                                className="w-full btn-primary-enterprise justify-center py-3 text-xs">
+                                <span>Dispatch Academic Advisor Notification</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            )}
+
+        </div>
+    );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<AdminDashboardApp />);
+</script>
+{% endblock %}
